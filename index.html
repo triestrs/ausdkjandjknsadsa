@@ -3,52 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ganteng Store</title>
+    <title>Tournament Overlay Scoreboard</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 300px; }
-        .price { font-size: 24px; color: #2ecc71; font-weight: bold; margin: 10px 0; }
-        button { background: #0070f3; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
-        button:hover { background: #0056b3; }
+        :root {
+            --blue-gradient: linear-gradient(to bottom, #2b95ff 0%, #175ec2 40%, #0d3880 100%);
+            --dark-bg: #090b10;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a; /* Ganti ke 'transparent' jika ingin dipakai di OBS */
+            font-family: 'Arial Black', 'Impact', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* CONTAINER UTAMA OVERLAY */
+        .scoreboard-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 900px;
+            position: relative;
+            filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.7));
+            margin-bottom: 80px; /* Jarak ke panel kontrol */
+        }
+
+        /* BARIS ATAS: Nama Tim (Bentuk Trapesium) */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: -2px; /* Menghilangkan celah mikro */
+        }
+
+        .team-box {
+            width: 350px;
+            height: 45px;
+            background: var(--blue-gradient);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+            border: 1.5px solid #4ba3ff;
+        }
+
+        .team-box.left {
+            transform: skewX(-25deg);
+            justify-content: flex-start;
+            border-right: none;
+        }
+
+        .team-box.right {
+            transform: skewX(25deg);
+            justify-content: flex-end;
+            border-left: none;
+        }
+
+        /* Mengembalikan teks agar tidak ikut miring */
+        .team-text {
+            color: white;
+            font-size: 22px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        .team-box.left .team-text { transform: skewX(25deg); }
+        .team-box.right .team-text { transform: skewX(-25deg); }
+
+
+        /* BARIS BAWAH: Match Info & Indikator Poin */
+        .bottom-bar {
+            width: 680px;
+            height: 38px;
+            background: var(--blue-gradient);
+            transform: skewX(-25deg);
+            border: 1.5px solid #4ba3ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Konten di dalam bar bawah (Dibalik miringnya agar lurus) */
+        .bottom-content {
+            transform: skewX(25deg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 90%;
+            height: 100%;
+        }
+
+        /* Teks tengah (BEST OF 3) */
+        .match-info {
+            color: #ffffff;
+            font-style: italic;
+            font-size: 20px;
+            text-shadow: 0px 2px 4px rgba(0,0,0,1);
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        /* Slot Indikator Poin (Kapsul Hitam) */
+        .point-container {
+            display: flex;
+            gap: 6px;
+        }
+
+        .point-slot {
+            width: 45px;
+            height: 16px;
+            background-color: #000000;
+            border-radius: 10px;
+            border: 1px solid #1d4480;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Ketika poin terisi (Warna kuning menyala khas turnamen) */
+        .point-slot.active {
+            background: linear-gradient(to bottom, #fff677, #ffbb00);
+            border-color: #fff;
+            box-shadow: 0 0 8px #ffbb00;
+        }
+
+
+        /* =================================================== */
+        /* PANEL KONTROL ADMIN (TIDAK AKAN KELIHATAN DI OBS)  */
+        /* =================================================== */
+        .admin-panel {
+            background: #222530;
+            border: 2px solid #3b4252;
+            border-radius: 8px;
+            padding: 20px;
+            color: white;
+            font-family: sans-serif;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            font-size: 14px;
+            color: #8892b0;
+        }
+
+        .control-group input {
+            padding: 8px;
+            background: #1e222b;
+            border: 1px solid #3b4252;
+            color: white;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-score {
+            padding: 6px 12px;
+            background: #175ec2;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .btn-score:hover { background: #2b95ff; }
+        .btn-reset { background: #d04646; }
+        .btn-reset:hover { background: #ff5252; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <img src="https://via.placeholder.com/150" alt="Produk" style="border-radius: 10px;">
-        <h3>Kopi Ganteng Premium</h3>
-        <p class="price">Rp 25.000</p>
-        <button id="btn-bayar">Beli Sekarang</button>
+    <div class="scoreboard-container">
+        
+        <div class="top-bar">
+            <div class="team-box left">
+                <div class="team-text" id="display-team1">TEAM A</div>
+            </div>
+            <div class="team-box right">
+                <div class="team-text" id="display-team2">TEAM B</div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="bottom-content">
+                
+                <div class="point-container">
+                    <div class="point-slot t1-p" id="t1-p1"></div>
+                    <div class="point-slot t1-p" id="t1-p2"></div>
+                </div>
+
+                <div class="match-info" id="display-status">BEST OF 3</div>
+
+                <div class="point-container">
+                    <div class="point-slot t2-p" id="t2-p1"></div>
+                    <div class="point-slot t2-p" id="t2-p2"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="admin-panel">
+        <div class="control-group">
+            <label>NAMA TIM 1 (KIRI)</label>
+            <input type="text" id="input-team1" value="TEAM A" oninput="updateNames()">
+            <div>
+                <button class="btn-score" onclick="changeScore(1, 1)">+ Skor</button>
+                <button class="btn-score btn-reset" onclick="changeScore(1, -1)">- Skor</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>STATUS / MODE</label>
+            <input type="text" id="input-status" value="BEST OF 3" oninput="updateNames()">
+        </div>
+
+        <div class="control-group">
+            <label>NAMA TIM 2 (KANAN)</label>
+            <input type="text" id="input-team2" value="TEAM B" oninput="updateNames()">
+            <div>
+                <button class="btn-score" onclick="changeScore(2, 1)">+ Skor</button>
+                <button class="btn-score btn-reset" onclick="changeScore(2, -1)">- Skor</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        document.getElementById('btn-bayar').onclick = async () => {
-            const btn = document.getElementById('btn-bayar');
-            btn.innerText = "Loading...";
-            btn.disabled = true;
+        // Skor Awal
+        let scoreTim1 = 0;
+        let scoreTim2 = 0;
+        const maxPoin = 2; // Batas indikator lampu (cocok untuk BO3)
 
-            try {
-                const res = await fetch('/api/checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: 25000, product_name: "Kopi Ganteng Premium" })
-                });
-                
-                const result = await res.json();
-                
-                if (result.payment_url) {
-                    window.location.href = result.payment_url;
-                } else {
-                    alert("Gagal ambil link pembayaran!");
-                    btn.innerText = "Beli Sekarang";
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                alert("Error koneksi!");
-                btn.innerText = "Beli Sekarang";
-                btn.disabled = false;
+        // Fungsi Update Nama & Status secara Real-time
+        function updateNames() {
+            document.getElementById('display-team1').innerText = document.getElementById('input-team1').value;
+            document.getElementById('display-team2').innerText = document.getElementById('input-team2').value;
+            document.getElementById('display-status').innerText = document.getElementById('input-status').value;
+        }
+
+        // Fungsi Mekanisme Set/Ubah Poin Indikator
+        function changeScore(team, val) {
+            if (team === 1) {
+                scoreTim1 = Math.max(0, Math.min(maxPoin, scoreTim1 + val));
+                updateDots(1, scoreTim1);
+            } else if (team === 2) {
+                scoreTim2 = Math.max(0, Math.min(maxPoin, scoreTim2 + val));
+                updateDots(2, scoreTim2);
             }
-        };
+        }
+
+        // Fungsi Menyalakan Kapsul Lampu Poin
+        function updateDots(team, score) {
+            const className = team === 1 ? '.t1-p' : '.t2-p';
+            const slots = document.querySelectorAll(className);
+            
+            slots.forEach((slot, index) => {
+                if (index < score) {
+                    slot.classList.add('active');
+                } else {
+                    slot.classList.remove('active');
+                }
+            });
+        }
     </script>
 </body>
 </html>
